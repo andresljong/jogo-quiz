@@ -15,8 +15,8 @@
         </div>
 
         <div id="tela-jogo" style="display: none;">
-            <h2 id="titulo-pergunta">Carregando pergunta...</h2>
-            <div id="area-resposta">
+            <h2 id="titulo-pergunta">Aguardando o professor iniciar o quiz...</h2>
+            <div id="area-resposta" style="display: none;">
                 <textarea id="input-resposta" placeholder="Digite sua resposta aqui..."></textarea>
                 <button id="btn-enviar" onclick="enviarResposta()">Enviar Resposta</button>
             </div>
@@ -28,7 +28,7 @@
     <script>
         const socket = io();
         let nomeAluno = "";
-        let indicePerguntaAtual = 0;
+        let perguntaAtual = "";
 
         function iniciarJogo() {
             nomeAluno = document.getElementById('input-nome').value.trim();
@@ -37,23 +37,24 @@
             document.getElementById('tela-registro').style.display = 'none';
             document.getElementById('tela-jogo').style.display = 'block';
 
-            buscarPergunta();
+            // Avisa o servidor que este aluno entrou para receber a pergunta caso o jogo já tenha começado
+            socket.emit('aluno_entrou');
         }
 
-        function buscarPergunta() {
-            socket.emit('pedir_pergunta', indicePerguntaAtual);
-        }
-
-        socket.on('receber_pergunta', (dados) => {
-            document.getElementById('titulo-pergunta').innerText = dados.pergunta;
-            document.getElementById('status-envio').innerText = "";
+        // Quando o professor dispara o início do jogo
+        socket.on('jogo_iniciado', (dados) => {
+            perguntaAtual = dados.primeiraPergunta;
+            document.getElementById('titulo-pergunta').innerText = perguntaAtual;
             document.getElementById('input-resposta').value = "";
-            
-            if (dados.fim) {
-                document.getElementById('area-resposta').style.display = 'none';
-            } else {
-                document.getElementById('area-resposta').style.display = 'block';
-            }
+            document.getElementById('status-envio').innerText = "";
+            document.getElementById('area-resposta').style.display = 'block';
+        });
+
+        // Caso o aluno entre no meio de um jogo que já está rolando
+        socket.on('receber_pergunta_aluno', (dados) => {
+            perguntaAtual = dados.pergunta;
+            document.getElementById('titulo-pergunta').innerText = perguntaAtual;
+            document.getElementById('area-resposta').style.display = 'block';
         });
 
         function enviarResposta() {
@@ -62,8 +63,7 @@
 
             socket.emit('enviar_resposta', {
                 nome: nomeAluno,
-                resposta: resposta,
-                indice_pergunta: indicePerguntaAtual
+                resposta: resposta
             });
 
             document.getElementById('status-envio').innerHTML = "<p class='aguardando'>Resposta enviada! Aguardando correção do professor...</p>";
@@ -72,9 +72,19 @@
 
         socket.on('resultado_avaliacao', (dados) => {
             if (dados.aprovado) {
-                alert("Sua resposta foi aprovada! Indo para a próxima pergunta.");
-                indicePerguntaAtual++;
-                buscarPergunta();
+                if (dados.fim) {
+                    alert("Parabéns! Você respondeu todas as perguntas propostas pelo professor!");
+                    document.getElementById('titulo-pergunta').innerText = "Você concluiu o Quiz! 🎉";
+                    document.getElementById('status-envio').innerText = "";
+                    document.getElementById('area-resposta').style.display = 'none';
+                } else {
+                    alert("Sua resposta foi aprovada! Avançando para a próxima pergunta.");
+                    perguntaAtual = dados.proximaPergunta;
+                    document.getElementById('titulo-pergunta').innerText = perguntaAtual;
+                    document.getElementById('input-resposta').value = "";
+                    document.getElementById('status-envio').innerText = "";
+                    document.getElementById('area-resposta').style.display = 'block';
+                }
             } else {
                 alert("Sua resposta foi rejeitada. Tente elaborar outra resposta!");
                 document.getElementById('area-resposta').style.display = 'block';
