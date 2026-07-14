@@ -6,49 +6,93 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-// Lista de perguntas do quiz
-const perguntas = [
-    "1. Qual é a capital do Brasil?",
-    "2. Quanto é 8 x 7?",
-    "3. Qual o gás mais abundante na atmosfera terrestre?"
-];
+// Guardará a lista de perguntas enviada pelo professor para a rodada atual
+let perguntasRodada = [];
+// Guardará o progresso de cada aluno (id_do_aluno -> índice da pergunta atual)
+const progressoAlunos = {};
 
-// Servir os arquivos da pasta 'public'
 app.use(express.static('public'));
 
 io.on('connection', (socket) => {
     console.log('Um usuário se conectou:', socket.id);
 
-    // Quando o aluno entra, ele pede a pergunta atual dele
-    socket.on('pedir_pergunta', (indice) => {
-        if (indice < perguntas.length) {
-            socket.emit('receber_pergunta', { pergunta: perguntas[indice], fim: false });
-        } else {
-            socket.emit('receber_pergunta', { pergunta: "Parabéns! Você concluiu o quiz!", fim: true });
+    // Quando o professor envia a lista de perguntas para iniciar o jogo
+    socket.on('iniciar_rodada_perguntas', (dados) => {
+        perguntasRodada = dados.perguntas;
+        console.log("Nova rodada iniciada com as perguntas:", perguntasRodada);
+        
+        // Reseta o progresso de todos para a primeira pergunta (índice 0)
+        for (let id in progressoAlunos) {
+            progressoAlunos[id] = 0;
+        }
+
+        // Dispara para todos os alunos que o jogo começou e envia a primeira pergunta
+        io.emit('jogo_iniciado', { primeiraPergunta: perguntasRodada[0] });
+    });
+
+    // Quando o aluno entra ou atualiza a página, verifica se já tem jogo rodando
+    socket.on('aluno_entrou', () => {
+        if (perguntasRodada.length > 0) {
+            // Se o aluno acabou de entrar, ele começa na pergunta 0
+            progressoAlunos[socket.id] = 0;
+            socket.emit('receber_pergunta_aluno', { 
+                pergunta: perguntasRodada[0], 
+                indice: 0,
+                fim: false 
+            });
         }
     });
 
     // Quando o aluno envia uma resposta
     socket.on('enviar_resposta', (dados) => {
-        // Envia a resposta do aluno diretamente para o painel do professor
+        const indiceAtual = progressoAlunos[socket.id] || 0;
+        
+        // Envia a resposta do aluno para o professor saber qual pergunta está sendo respondida
         io.emit('nova_resposta_professor', {
             id_aluno: socket.id,
             nome: dados.nome,
             resposta: dados.resposta,
-            pergunta: perguntas[dados.indice_pergunta],
-            indice_pergunta: dados.indice_pergunta
+            pergunta: perguntasRodada[indiceAtual],
+            indice_pergunta: indiceAtual
         });
     });
 
-    // Quando o professor aprova ou rejeita
+    // Quando o professor decide se aprova ou rejeita
     socket.on('decisao_professor', (dados) => {
-        // Envia o veredito especificamente para o aluno que respondeu
-        io.to(dados.id_aluno).emit('resultado_avaliacao', {
-            aprovado: dados.aprovado
-        });
+        if (dados.aprovado) {
+            // Avança o aluno para a próxima pergunta
+            if (progressoAlunos[dados.id_aluno] !== undefined) {
+                progressoAlunos[dados.id_aluno]++;
+            } else {
+                progressoAlunos[dados.id_aluno] = 1;
+            }
+
+            const proximoIndice = progressoAlunos[dados.id_aluno];
+
+            // Verifica se o aluno já respondeu todas as perguntas enviadas
+            if (proximoIndice < perguntasRodada.length) {
+                io.to(dados.id_aluno).emit('resultado_avaliacao', {
+                    aprovado: true,
+                    fim: false,
+                    proximaPergunta: perguntasRodada[proximoIndice],
+                    indice: proximoIndice
+                });
+            } else {
+                io.to(dados.id_aluno).emit('resultado_avaliacao', {
+                    aprovado: true,
+                    fim: true
+                });
+            }
+        } else {
+            // Se foi rejeitado, apenas avisa o aluno para tentar de novo a mesma
+            io.to(dados.id_aluno).emit('resultado_avaliacao', {
+                aprovado: false
+            });
+        }
     });
 
     socket.on('disconnect', () => {
+        delete progressoAlunos[socket.id];
         console.log('Usuário se desconectou:', socket.id);
     });
 });
