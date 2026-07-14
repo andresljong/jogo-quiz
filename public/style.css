@@ -1,0 +1,92 @@
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f0f2f5;
+    margin: 0;
+    padding: 20px;
+    display: flex;
+    justify-content: center;
+}
+
+.container {
+    max-width: 600px;
+    width: 100%;
+    background: white;
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    text-align: center;
+}
+
+input, textarea {
+    width: 100%;
+    padding: 12px;
+    margin: 15px 0;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    box-sizing: border-box;
+    font-size: 16px;
+}
+
+textarea {
+    height: 100px;
+    resize: none;
+}
+
+button {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    padding: 12px 25px;
+    border-radius: 8px;
+    font-size: 16px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background 0.2s;
+}
+
+button:hover {
+    background-color: #0056b3;
+}
+
+.aguardando {
+    color: #e67e22;
+    font-weight: bold;
+    animation: piscar 1.5s infinite;
+}
+
+@keyframes piscar {
+    0% { opacity: 0.5; }
+    50% { opacity: 1; }
+    100% { opacity: 0.5; }
+}
+
+/* Painel do Professor */
+.card-resposta {
+    background: #f8f9fa;
+    border-left: 5px solid #007bff;
+    padding: 15px;
+    margin: 15px 0;
+    border-radius: 6px;
+    text-align: left;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+
+.acoes {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.btn-aprovar {
+    background-color: #2ecc71;
+}
+.btn-aprovar:hover {
+    background-color: #27ae60;
+}
+
+.btn-rejeitar {
+    background-color: #e74c3c;
+}
+.btn-rejeitar:hover {
+    background-color: #c0392b;
+}
