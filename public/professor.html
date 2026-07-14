@@ -7,8 +7,26 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="container">
-        <h1>Painel de Avaliação do Professor</h1>
+    <div class="container" style="max-width: 800px;">
+        <h1>Painel do Professor</h1>
+        
+        <div style="background: #eef2f7; padding: 20px; border-radius: 8px; margin-bottom: 25px; border: 1px solid #d0d7de; text-align: left;">
+            <h3>1. Prepare a Lista de Perguntas:</h3>
+            <div style="display: flex; gap: 10px;">
+                <input type="text" id="campo-pergunta" placeholder="Digite uma pergunta e clique em Adicionar..." style="margin: 0; flex-grow: 1;">
+                <button onclick="adicionarNaLista()" style="background-color: #007bff; padding: 0 20px;">Adicionar</button>
+            </div>
+            
+            <h4 style="margin-top: 15px; margin-bottom: 5px;">Perguntas adicionadas:</h4>
+            <ol id="lista-preparacao" style="background: white; padding: 15px 30px; border-radius: 6px; border: 1px dashed #ccc; min-height: 50px;">
+                </ol>
+            
+            <button onclick="dispararRodada()" style="background-color: #28a745; width: 100%; margin-top: 10px; font-size: 18px;">Disparar Jogo com estas Perguntas! 🚀</button>
+        </div>
+
+        <hr style="border: 0; border-top: 1px solid #ccc; margin: 20px 0;">
+
+        <h2>Respostas Recebidas (Em Tempo Real)</h2>
         <div id="lista-respostas">
             <p>Nenhuma resposta pendente no momento.</p>
         </div>
@@ -18,6 +36,37 @@
     <script>
         const socket = io();
         const listaRespostas = document.getElementById('lista-respostas');
+        const listaPreparacao = document.getElementById('lista-preparacao');
+        
+        let perguntasTemporarias = [];
+
+        function adicionarNaLista() {
+            const input = document.getElementById('campo-pergunta');
+            const texto = input.value.trim();
+            if (!texto) return alert("Digite a pergunta antes de adicionar!");
+
+            perguntasTemporarias.push(texto);
+            
+            // Atualiza a lista visual do professor
+            const li = document.createElement('li');
+            li.style.marginBottom = "5px";
+            li.innerText = texto;
+            listaPreparacao.appendChild(li);
+
+            input.value = "";
+            input.focus();
+        }
+
+        function dispararRodada() {
+            if (perguntasTemporarias.length === 0) {
+                return alert("Adicione pelo menos uma pergunta na lista antes de começar!");
+            }
+
+            if (confirm("Deseja iniciar o jogo agora? Isso enviará a primeira pergunta para os alunos e resetará o progresso de todos.")) {
+                socket.emit('iniciar_rodada_perguntas', { perguntas: perguntasTemporarias });
+                alert("Jogo iniciado com sucesso! Os alunos receberam a primeira pergunta.");
+            }
+        }
 
         socket.on('nova_resposta_professor', (dados) => {
             if (listaRespostas.querySelector('p')) {
@@ -29,7 +78,7 @@
             card.id = `card-${dados.id_aluno}`;
             card.innerHTML = `
                 <h3>Aluno: ${dados.nome}</h3>
-                <p><strong>Pergunta:</strong> ${dados.pergunta}</p>
+                <p><strong>Pergunta ${dados.indice_pergunta + 1}:</strong> ${dados.pergunta}</p>
                 <p><strong>Resposta enviada:</strong> "${dados.resposta}"</p>
                 <div class="acoes">
                     <button class="btn-aprovar" onclick="decidir('${dados.id_aluno}', true)">Aprovar ✔</button>
