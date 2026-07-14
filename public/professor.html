@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel do Professor</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Painel de Avaliação do Professor</h1>
+        <div id="lista-respostas">
+            <p>Nenhuma resposta pendente no momento.</p>
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+        const listaRespostas = document.getElementById('lista-respostas');
+
+        socket.on('nova_resposta_professor', (dados) => {
+            if (listaRespostas.querySelector('p')) {
+                listaRespostas.innerHTML = '';
+            }
+
+            const card = document.createElement('div');
+            card.className = 'card-resposta';
+            card.id = `card-${dados.id_aluno}`;
+            card.innerHTML = `
+                <h3>Aluno: ${dados.nome}</h3>
+                <p><strong>Pergunta:</strong> ${dados.pergunta}</p>
+                <p><strong>Resposta enviada:</strong> "${dados.resposta}"</p>
+                <div class="acoes">
+                    <button class="btn-aprovar" onclick="decidir('${dados.id_aluno}', true)">Aprovar ✔</button>
+                    <button class="btn-rejeitar" onclick="decidir('${dados.id_aluno}', false)">Rejeitar ✖</button>
+                </div>
+            `;
+            listaRespostas.appendChild(card);
+        });
+
+        function decidir(idAluno, aprovado) {
+            socket.emit('decisao_professor', {
+                id_aluno: idAluno,
+                aprovado: aprovado
+            });
+
+            const card = document.getElementById(`card-${idAluno}`);
+            if (card) card.remove();
+
+            if (listaRespostas.children.length === 0) {
+                listaRespostas.innerHTML = '<p>Nenhuma resposta pendente no momento.</p>';
+            }
+        }
+    </script>
+</body>
+</html>
