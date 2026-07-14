@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz do Aluno</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <div id="tela-registro">
+            <h2>Digite seu nome para começar:</h2>
+            <input type="text" id="input-nome" placeholder="Seu nome...">
+            <button onclick="iniciarJogo()">Entrar no Jogo</button>
+        </div>
+
+        <div id="tela-jogo" style="display: none;">
+            <h2 id="titulo-pergunta">Carregando pergunta...</h2>
+            <div id="area-resposta">
+                <textarea id="input-resposta" placeholder="Digite sua resposta aqui..."></textarea>
+                <button id="btn-enviar" onclick="enviarResposta()">Enviar Resposta</button>
+            </div>
+            <div id="status-envio"></div>
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+        let nomeAluno = "";
+        let indicePerguntaAtual = 0;
+
+        function iniciarJogo() {
+            nomeAluno = document.getElementById('input-nome').value.trim();
+            if (!nomeAluno) return alert("Por favor, digite seu nome!");
+
+            document.getElementById('tela-registro').style.display = 'none';
+            document.getElementById('tela-jogo').style.display = 'block';
+
+            buscarPergunta();
+        }
+
+        function buscarPergunta() {
+            socket.emit('pedir_pergunta', indicePerguntaAtual);
+        }
+
+        socket.on('receber_pergunta', (dados) => {
+            document.getElementById('titulo-pergunta').innerText = dados.pergunta;
+            document.getElementById('status-envio').innerText = "";
+            document.getElementById('input-resposta').value = "";
+            
+            if (dados.fim) {
+                document.getElementById('area-resposta').style.display = 'none';
+            } else {
+                document.getElementById('area-resposta').style.display = 'block';
+            }
+        });
+
+        function enviarResposta() {
+            const resposta = document.getElementById('input-resposta').value.trim();
+            if (!resposta) return alert("Escreva uma resposta antes de enviar!");
+
+            socket.emit('enviar_resposta', {
+                nome: nomeAluno,
+                resposta: resposta,
+                indice_pergunta: indicePerguntaAtual
+            });
+
+            document.getElementById('status-envio').innerHTML = "<p class='aguardando'>Resposta enviada! Aguardando correção do professor...</p>";
+            document.getElementById('area-resposta').style.display = 'none';
+        }
+
+        socket.on('resultado_avaliacao', (dados) => {
+            if (dados.aprovado) {
+                alert("Sua resposta foi aprovada! Indo para a próxima pergunta.");
+                indicePerguntaAtual++;
+                buscarPergunta();
+            } else {
+                alert("Sua resposta foi rejeitada. Tente elaborar outra resposta!");
+                document.getElementById('area-resposta').style.display = 'block';
+                document.getElementById('status-envio').innerText = "";
+            }
+        });
+    </script>
+</body>
+</html>
