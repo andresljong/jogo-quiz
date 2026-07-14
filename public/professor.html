@@ -26,9 +26,9 @@
 
         <hr style="border: 0; border-top: 1px solid #ccc; margin: 20px 0;">
 
-        <h2>Respostas Recebidas (Em Tempo Real)</h2>
+        <h2>Fila de Respostas Recebidas (Ordem de Chegada)</h2>
         <div id="lista-respostas">
-            <p>Nenhuma resposta pendente no momento.</p>
+            <p id="sem-respostas">Nenhuma resposta pendente no momento.</p>
         </div>
     </div>
 
@@ -42,15 +42,14 @@
 
         function adicionarNaLista() {
             const input = document.getElementById('campo-pergunta');
-            const texto = input.value.trim();
-            if (!texto) return alert("Digite a pergunta antes de adicionar!");
+            const text = input.value.trim();
+            if (!text) return alert("Digite a pergunta antes de adicionar!");
 
-            perguntasTemporarias.push(texto);
+            perguntasTemporarias.push(text);
             
-            // Atualiza a lista visual do professor
             const li = document.createElement('li');
             li.style.marginBottom = "5px";
-            li.innerText = texto;
+            li.innerText = text;
             listaPreparacao.appendChild(li);
 
             input.value = "";
@@ -68,37 +67,43 @@
             }
         }
 
+        // Fila que vai empilhando as respostas que chegam em ordem cronológica
         socket.on('nova_resposta_professor', (dados) => {
-            if (listaRespostas.querySelector('p')) {
-                listaRespostas.innerHTML = '';
+            const avisoVazio = document.getElementById('sem-respostas');
+            if (avisoVazio) {
+                avisoVazio.remove();
             }
 
+            // Cria um card único para cada resposta enviada
             const card = document.createElement('div');
             card.className = 'card-resposta';
-            card.id = `card-${dados.id_aluno}`;
+            card.id = dados.id_resposta; // Vinculado ao ID exclusivo daquela resposta específica
             card.innerHTML = `
                 <h3>Aluno: ${dados.nome}</h3>
                 <p><strong>Pergunta ${dados.indice_pergunta + 1}:</strong> ${dados.pergunta}</p>
                 <p><strong>Resposta enviada:</strong> "${dados.resposta}"</p>
                 <div class="acoes">
-                    <button class="btn-aprovar" onclick="decidir('${dados.id_aluno}', true)">Aprovar ✔</button>
-                    <button class="btn-rejeitar" onclick="decidir('${dados.id_aluno}', false)">Rejeitar ✖</button>
+                    <button class="btn-aprovar" onclick="decidir('${dados.id_resposta}', '${dados.id_aluno}', true)">Aprovar ✔</button>
+                    <button class="btn-rejeitar" onclick="decidir('${dados.id_resposta}', '${dados.id_aluno}', false)">Rejeitar ✖</button>
                 </div>
             `;
+            // appendChild adiciona no fim da lista, garantindo a ordem cronológica de quem enviou primeiro no topo!
             listaRespostas.appendChild(card);
         });
 
-        function decidir(idAluno, aprovado) {
+        function decidir(idResposta, idAluno, aprovado) {
             socket.emit('decisao_professor', {
                 id_aluno: idAluno,
                 aprovado: aprovado
             });
 
-            const card = document.getElementById(`card-${idAluno}`);
+            // Remove especificamente o card correspondente à resposta avaliada
+            const card = document.getElementById(idResposta);
             if (card) card.remove();
 
+            // Se não houver mais respostas na tela, exibe o aviso padrão de lista vazia
             if (listaRespostas.children.length === 0) {
-                listaRespostas.innerHTML = '<p>Nenhuma resposta pendente no momento.</p>';
+                listaRespostas.innerHTML = '<p id="sem-respostas">Nenhuma resposta pendente no momento.</p>';
             }
         }
     </script>
