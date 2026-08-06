@@ -90,3 +90,52 @@ button:hover {
 .btn-rejeitar:hover {
     background-color: #c0392b;
 }
+/* Painel Lateral de Logins Recentes */
+.painel-lateral {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    width: 250px;
+    background: white;
+    padding: 15px;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+    text-align: left;
+    max-height: 80vh;
+    overflow-y: auto;
+    z-index: 1000;
+}
+
+.painel-lateral h3 {
+    margin-top: 0;
+    font-size: 16px;
+    color: #333;
+    border-bottom: 2px solid #f0f2f5;
+    padding-bottom: 8px;
+}
+
+.item-aluno {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 0;
+    border-bottom: 1px solid #eee;
+    font-size: 14px;
+}
+
+/* Bolinhas de Status Online/Offline */
+.status-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+.status-dot.online {
+    background-color: #2ecc71; /* Verde */
+    box-shadow: 0 0 8px rgba(46, 204, 113, 0.6);
+}
+
+.status-dot.offline {
+    background-color: #95a5a6; /* Cinza */
+}
