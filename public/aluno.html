@@ -37,11 +37,11 @@
             document.getElementById('tela-registro').style.display = 'none';
             document.getElementById('tela-jogo').style.display = 'block';
 
-            // Avisa o servidor que este aluno entrou para receber a pergunta caso o jogo já tenha começado
+            // Registra a presença online do aluno no servidor
+            socket.emit('aluno_logou', { nome: nomeAluno, email: nomeAluno });
             socket.emit('aluno_entrou');
         }
 
-        // Quando o professor dispara o início do jogo
         socket.on('jogo_iniciado', (dados) => {
             perguntaAtual = dados.primeiraPergunta;
             document.getElementById('titulo-pergunta').innerText = perguntaAtual;
@@ -50,7 +50,6 @@
             document.getElementById('area-resposta').style.display = 'block';
         });
 
-        // Caso o aluno entre no meio de um jogo que já está rolando
         socket.on('receber_pergunta_aluno', (dados) => {
             perguntaAtual = dados.pergunta;
             document.getElementById('titulo-pergunta').innerText = perguntaAtual;
@@ -61,24 +60,20 @@
             const resposta = document.getElementById('input-resposta').value.trim();
             if (!resposta) return alert("Escreva uma resposta antes de enviar!");
 
-            socket.emit('enviar_resposta', {
-                nome: nomeAluno,
-                resposta: resposta
-            });
-
-            document.getElementById('status-envio').innerHTML = "<p class='aguardando'>Resposta enviada! Aguardando correção do professor...</p>";
+            socket.emit('enviar_resposta', { nome: nomeAluno, resposta: resposta });
+            document.getElementById('status-envio').innerHTML = "<p class='aguardando'>Resposta enviada! Aguardando correção...</p>";
             document.getElementById('area-resposta').style.display = 'none';
         }
 
         socket.on('resultado_avaliacao', (dados) => {
             if (dados.aprovado) {
                 if (dados.fim) {
-                    alert("Parabéns! Você respondeu todas as perguntas propostas pelo professor!");
+                    alert("Parabéns! Você respondeu todas as perguntas!");
                     document.getElementById('titulo-pergunta').innerText = "Você concluiu o Quiz! 🎉";
                     document.getElementById('status-envio').innerText = "";
                     document.getElementById('area-resposta').style.display = 'none';
                 } else {
-                    alert("Sua resposta foi aprovada! Avançando para a próxima pergunta.");
+                    alert("Sua resposta foi aprovada! Próxima pergunta.");
                     perguntaAtual = dados.proximaPergunta;
                     document.getElementById('titulo-pergunta').innerText = perguntaAtual;
                     document.getElementById('input-resposta').value = "";
@@ -86,7 +81,7 @@
                     document.getElementById('area-resposta').style.display = 'block';
                 }
             } else {
-                alert("Sua resposta foi rejeitada. Tente elaborar outra resposta!");
+                alert("Sua resposta foi rejeitada. Tente novamente!");
                 document.getElementById('area-resposta').style.display = 'block';
                 document.getElementById('status-envio').innerText = "";
             }
