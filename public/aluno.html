@@ -9,7 +9,7 @@
 <body>
     <div class="container">
         <div id="tela-registro">
-            <h2>Digite seu nome para começar:</h2>
+            <h2>Digite seu nome de exibição:</h2>
             <input type="text" id="input-nome" placeholder="Seu nome...">
             <button onclick="iniciarJogo()">Entrar no Jogo</button>
         </div>
@@ -24,11 +24,34 @@
         </div>
     </div>
 
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
     <script src="/socket.io/socket.io.js"></script>
+
     <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyCkcjh3zLMA0kPLrzHYSUDlNVu92iXYrtA",
+            authDomain: "quiz-escola-61ff5.firebaseapp.com",
+            projectId: "quiz-escola-61ff5",
+            storageBucket: "quiz-escola-61ff5.firebasestorage.app",
+            messagingSenderId: "519577877230",
+            appId: "1:519577877230:web:7a43984e418527847dd1ff"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
         const socket = io();
+
         let nomeAluno = "";
+        let emailAluno = "";
         let perguntaAtual = "";
+
+        // Identifica quem está logado no Firebase
+        auth.onAuthStateChanged((user) => {
+            if (user) {
+                emailAluno = user.email;
+            }
+        });
 
         function iniciarJogo() {
             nomeAluno = document.getElementById('input-nome').value.trim();
@@ -37,8 +60,12 @@
             document.getElementById('tela-registro').style.display = 'none';
             document.getElementById('tela-jogo').style.display = 'block';
 
-            // Registra a presença online do aluno no servidor
-            socket.emit('aluno_logou', { nome: nomeAluno, email: nomeAluno });
+            // Registra a presença no painel do professor
+            socket.emit('aluno_logou', { 
+                nome: nomeAluno, 
+                email: emailAluno || nomeAluno 
+            });
+            
             socket.emit('aluno_entrou');
         }
 
