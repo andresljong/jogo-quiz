@@ -58,6 +58,31 @@
         }
 
         function autenticar() {
+            <script>
+        // MANTENHA SUAS CHAVES DO FIREBASE AQUI
+        const firebaseConfig = {
+            apiKey: "SUA_API_KEY_AQUI",
+            authDomain: "SEU_PROJECT_ID.firebaseapp.com",
+            projectId: "SEU_PROJECT_ID",
+            storageBucket: "SEU_PROJECT_ID.appspot.com",
+            messagingSenderId: "123456789",
+            appId: "SUA_APP_ID"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+
+        let modoCadastro = false;
+
+        function alternarModo() {
+            modoCadastro = !modoCadastro;
+            document.getElementById('titulo-form').innerText = modoCadastro ? "Criar Nova Conta" : "Entrar no Quiz";
+            document.getElementById('btn-acao').innerText = modoCadastro ? "Cadastrar" : "Entrar";
+            document.getElementById('texto-alternar').innerText = modoCadastro ? "Já tem uma conta?" : "Não tem uma conta?";
+            document.getElementById('link-alternar').innerText = modoCadastro ? "Fazer Login" : "Cadastre-se";
+        }
+
+        function autenticar() {
             const email = document.getElementById('email').value.trim();
             const senha = document.getElementById('senha').value.trim();
             const tipo = document.getElementById('tipo-usuario').value;
@@ -65,10 +90,9 @@
             if (!email || !senha) return alert("Preencha todos os campos!");
 
             if (modoCadastro) {
-                // Criar Novo Usuário
+                // Cadastro: Salva o tipo selecionado
                 auth.createUserWithEmailAndPassword(email, senha)
                     .then((userCredential) => {
-                        // Salva se o usuário é Aluno ou Professor na memória do navegador
                         localStorage.setItem('perfil_quiz', tipo);
                         alert("Conta criada com sucesso!");
                         redirecionar(tipo);
@@ -77,12 +101,11 @@
                         alert("Erro ao cadastrar: " + error.message);
                     });
             } else {
-                // Fazer Login
+                // Login: Atualiza o tipo selecionado na memória para garantir o direcionamento correto
                 auth.signInWithEmailAndPassword(email, senha)
                     .then((userCredential) => {
-                        // Busca o perfil salvo previamente ou define por padrão
-                        const perfilSalvo = localStorage.getItem('perfil_quiz') || tipo;
-                        redirecionar(perfilSalvo);
+                        localStorage.setItem('perfil_quiz', tipo);
+                        redirecionar(tipo);
                     })
                     .catch((error) => {
                         alert("Erro ao entrar: E-mail ou senha incorretos!");
