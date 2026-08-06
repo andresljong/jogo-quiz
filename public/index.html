@@ -33,7 +33,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
 
     <script>
-        // ⚠️ SUBSTITUA AQUI COM AS SUAS CONFIGURAÇÕES DO PASSO 3!
+        // ATENÇÃO: Verifique se todas as aspas e vírgulas das suas chaves estão corretas!
         const firebaseConfig = {
   apiKey: "AIzaSyCkcjh3zLMA0kPLrzHYSUDlNVu92iXYrtA",
   authDomain: "quiz-escola-61ff5.firebaseapp.com",
@@ -43,35 +43,16 @@
   appId: "1:519577877230:web:7a43984e418527847dd1ff"
 };
 
-        // Inicializa o Firebase
-        firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth();
-
-        let modoCadastro = false;
-
-        function alternarModo() {
-            modoCadastro = !modoCadastro;
-            document.getElementById('titulo-form').innerText = modoCadastro ? "Criar Nova Conta" : "Entrar no Quiz";
-            document.getElementById('btn-acao').innerText = modoCadastro ? "Cadastrar" : "Entrar";
-            document.getElementById('texto-alternar').innerText = modoCadastro ? "Já tem uma conta?" : "Não tem uma conta?";
-            document.getElementById('link-alternar').innerText = modoCadastro ? "Fazer Login" : "Cadastre-se";
-        }
-
-        function autenticar() {
-            <script>
-        // MANTENHA SUAS CHAVES DO FIREBASE AQUI
-        const firebaseConfig = {
-            apiKey: "SUA_API_KEY_AQUI",
-            authDomain: "SEU_PROJECT_ID.firebaseapp.com",
-            projectId: "SEU_PROJECT_ID",
-            storageBucket: "SEU_PROJECT_ID.appspot.com",
-            messagingSenderId: "123456789",
-            appId: "SUA_APP_ID"
         };
 
-        firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth();
+        // Inicialização do Firebase
+        try {
+            firebase.initializeApp(firebaseConfig);
+        } catch (e) {
+            console.error("Erro ao inicializar Firebase:", e);
+        }
 
+        const auth = firebase.auth();
         let modoCadastro = false;
 
         function alternarModo() {
@@ -87,10 +68,12 @@
             const senha = document.getElementById('senha').value.trim();
             const tipo = document.getElementById('tipo-usuario').value;
 
-            if (!email || !senha) return alert("Preencha todos os campos!");
+            if (!email || !senha) {
+                alert("Por favor, preencha o e-mail e a senha!");
+                return;
+            }
 
             if (modoCadastro) {
-                // Cadastro: Salva o tipo selecionado
                 auth.createUserWithEmailAndPassword(email, senha)
                     .then((userCredential) => {
                         localStorage.setItem('perfil_quiz', tipo);
@@ -101,14 +84,13 @@
                         alert("Erro ao cadastrar: " + error.message);
                     });
             } else {
-                // Login: Atualiza o tipo selecionado na memória para garantir o direcionamento correto
                 auth.signInWithEmailAndPassword(email, senha)
                     .then((userCredential) => {
                         localStorage.setItem('perfil_quiz', tipo);
                         redirecionar(tipo);
                     })
                     .catch((error) => {
-                        alert("Erro ao entrar: E-mail ou senha incorretos!");
+                        alert("Erro ao entrar: " + error.message);
                     });
             }
         }
