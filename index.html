@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Quiz Escolar</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h2 id="titulo-form">Entrar no Quiz</h2>
+        
+        <input type="email" id="email" placeholder="Seu e-mail (ex: aluno@escola.com)">
+        <input type="password" id="senha" placeholder="Sua senha">
+        
+        <div id="area-perfil" style="margin-bottom: 15px;">
+            <label><strong>Tipo de conta:</strong></label><br>
+            <select id="tipo-usuario" style="width: 100%; padding: 10px; margin-top: 5px; border-radius: 8px;">
+                <option value="aluno">Aluno</option>
+                <option value="professor">Professor</option>
+            </select>
+        </div>
+
+        <button id="btn-acao" onclick="autenticar()">Entrar</button>
+
+        <p style="margin-top: 15px; font-size: 14px;">
+            <span id="texto-alternar">Não tem uma conta?</span> 
+            <a href="#" onclick="alternarModo()" id="link-alternar" style="color: #007bff; font-weight: bold;">Cadastre-se</a>
+        </p>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+
+    <script>
+        // ⚠️ SUBSTITUA AQUI COM AS SUAS CONFIGURAÇÕES DO PASSO 3!
+        const firebaseConfig = {
+  apiKey: "AIzaSyCkcjh3zLMA0kPLrzHYSUDlNVu92iXYrtA",
+  authDomain: "quiz-escola-61ff5.firebaseapp.com",
+  projectId: "quiz-escola-61ff5",
+  storageBucket: "quiz-escola-61ff5.firebasestorage.app",
+  messagingSenderId: "519577877230",
+  appId: "1:519577877230:web:7a43984e418527847dd1ff"
+};
+
+        // Inicializa o Firebase
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+
+        let modoCadastro = false;
+
+        function alternarModo() {
+            modoCadastro = !modoCadastro;
+            document.getElementById('titulo-form').innerText = modoCadastro ? "Criar Nova Conta" : "Entrar no Quiz";
+            document.getElementById('btn-acao').innerText = modoCadastro ? "Cadastrar" : "Entrar";
+            document.getElementById('texto-alternar').innerText = modoCadastro ? "Já tem uma conta?" : "Não tem uma conta?";
+            document.getElementById('link-alternar').innerText = modoCadastro ? "Fazer Login" : "Cadastre-se";
+        }
+
+        function autenticar() {
+            const email = document.getElementById('email').value.trim();
+            const senha = document.getElementById('senha').value.trim();
+            const tipo = document.getElementById('tipo-usuario').value;
+
+            if (!email || !senha) return alert("Preencha todos os campos!");
+
+            if (modoCadastro) {
+                // Criar Novo Usuário
+                auth.createUserWithEmailAndPassword(email, senha)
+                    .then((userCredential) => {
+                        // Salva se o usuário é Aluno ou Professor na memória do navegador
+                        localStorage.setItem('perfil_quiz', tipo);
+                        alert("Conta criada com sucesso!");
+                        redirecionar(tipo);
+                    })
+                    .catch((error) => {
+                        alert("Erro ao cadastrar: " + error.message);
+                    });
+            } else {
+                // Fazer Login
+                auth.signInWithEmailAndPassword(email, senha)
+                    .then((userCredential) => {
+                        // Busca o perfil salvo previamente ou define por padrão
+                        const perfilSalvo = localStorage.getItem('perfil_quiz') || tipo;
+                        redirecionar(perfilSalvo);
+                    })
+                    .catch((error) => {
+                        alert("Erro ao entrar: E-mail ou senha incorretos!");
+                    });
+            }
+        }
+
+        function redirecionar(tipo) {
+            if (tipo === 'professor') {
+                window.location.href = "professor.html";
+            } else {
+                window.location.href = "aluno.html";
+            }
+        }
+    </script>
+</body>
+</html>
