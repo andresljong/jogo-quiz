@@ -47,9 +47,14 @@
         
         let perguntasTemporarias = [];
 
-        // Atualiza a lista visual dos alunos online/offline no canto direito
+        // Assim que o professor conecta, solicita a lista atual
+        socket.on('connect', () => {
+            socket.emit('professor_solicita_logins');
+        });
+
+        // Atualiza a lista visual dos alunos online/offline
         socket.on('atualizar_lista_logins', (alunos) => {
-            if (alunos.length === 0) {
+            if (!alunos || alunos.length === 0) {
                 listaLogins.innerHTML = '<p style="font-size: 12px; color: #777;">Nenhum aluno conectado.</p>';
                 return;
             }
@@ -64,7 +69,7 @@
 
                 item.innerHTML = `
                     <span class="status-dot ${statusClass}" title="${statusTexto}"></span>
-                    <span><strong>${aluno.nome}</strong></span>
+                    <span><strong>${aluno.nome}</strong> <br><small style="color:#666;">(${aluno.email})</small></span>
                 `;
                 listaLogins.appendChild(item);
             });
