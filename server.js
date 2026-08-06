@@ -10,12 +10,12 @@ let perguntasRodada = [];
 const progressoAlunos = {};
 let contadorRespostas = 0;
 
-// Lista que vai guardar os alunos e seus status (online/offline)
+// Objeto para armazenar os logins e o status (online/offline)
 const ultimosLogins = {}; 
 
 app.use(express.static('public'));
 
-// Limpador automático: roda a cada 30 segundos removendo quem saiu há mais de 10 minutos (600.000 ms)
+// Limpador automático: roda a cada 30 segundos removendo quem saiu há mais de 10 minutos
 setInterval(() => {
     const agora = Date.now();
     const DEZ_MINUTOS = 10 * 60 * 1000;
@@ -37,7 +37,12 @@ setInterval(() => {
 io.on('connection', (socket) => {
     console.log('Um usuário se conectou:', socket.id);
 
-    // Quando o aluno entra no jogo, ele envia o e-mail/nome dele
+    // [NOVO] Quando o professor entra, envia a lista atual de alunos imediatamente
+    socket.on('professor_solicita_logins', () => {
+        socket.emit('atualizar_lista_logins', Object.values(ultimosLogins));
+    });
+
+    // Quando o aluno faz login/entra na sala
     socket.on('aluno_logou', (dados) => {
         socket.emailAluno = dados.email;
         
@@ -48,7 +53,7 @@ io.on('connection', (socket) => {
             ultimoAcesso: Date.now()
         };
 
-        // Envia a lista atualizada de logins para todos os professores
+        // Transmite a lista atualizada para os professores
         io.emit('atualizar_lista_logins', Object.values(ultimosLogins));
     });
 
@@ -94,13 +99,11 @@ io.on('connection', (socket) => {
         }
     });
 
-    // Quando o aluno fecha a página ou desconecta
     socket.on('disconnect', () => {
         if (socket.emailAluno && ultimosLogins[socket.emailAluno]) {
             ultimosLogins[socket.emailAluno].online = false;
             ultimosLogins[socket.emailAluno].ultimoAcesso = Date.now();
             
-            // Avisa o painel do professor que ele agora está offline
             io.emit('atualizar_lista_logins', Object.values(ultimosLogins));
         }
         delete progressoAlunos[socket.id];
