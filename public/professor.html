@@ -7,26 +7,32 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="container" style="max-width: 800px;">
+    <div class="painel-lateral">
+        <h3>Últimos Logins</h3>
+        <div id="lista-logins">
+            <p style="font-size: 12px; color: #777;">Nenhum aluno conectado.</p>
+        </div>
+    </div>
+
+    <div class="container" style="max-width: 700px; margin-right: 300px;">
         <h1>Painel do Professor</h1>
         
         <div style="background: #eef2f7; padding: 20px; border-radius: 8px; margin-bottom: 25px; border: 1px solid #d0d7de; text-align: left;">
             <h3>1. Prepare a Lista de Perguntas:</h3>
             <div style="display: flex; gap: 10px;">
-                <input type="text" id="campo-pergunta" placeholder="Digite uma pergunta e clique em Adicionar..." style="margin: 0; flex-grow: 1;">
+                <input type="text" id="campo-pergunta" placeholder="Digite uma pergunta..." style="margin: 0; flex-grow: 1;">
                 <button onclick="adicionarNaLista()" style="background-color: #007bff; padding: 0 20px;">Adicionar</button>
             </div>
             
             <h4 style="margin-top: 15px; margin-bottom: 5px;">Perguntas adicionadas:</h4>
-            <ol id="lista-preparacao" style="background: white; padding: 15px 30px; border-radius: 6px; border: 1px dashed #ccc; min-height: 50px;">
-                </ol>
+            <ol id="lista-preparacao" style="background: white; padding: 15px 30px; border-radius: 6px; border: 1px dashed #ccc; min-height: 50px;"></ol>
             
-            <button onclick="dispararRodada()" style="background-color: #28a745; width: 100%; margin-top: 10px; font-size: 18px;">Disparar Jogo com estas Perguntas! 🚀</button>
+            <button onclick="dispararRodada()" style="background-color: #28a745; width: 100%; margin-top: 10px; font-size: 18px;">Disparar Jogo! 🚀</button>
         </div>
 
         <hr style="border: 0; border-top: 1px solid #ccc; margin: 20px 0;">
 
-        <h2>Fila de Respostas Recebidas (Ordem de Chegada)</h2>
+        <h2>Fila de Respostas Recebidas</h2>
         <div id="lista-respostas">
             <p id="sem-respostas">Nenhuma resposta pendente no momento.</p>
         </div>
@@ -37,16 +43,39 @@
         const socket = io();
         const listaRespostas = document.getElementById('lista-respostas');
         const listaPreparacao = document.getElementById('lista-preparacao');
+        const listaLogins = document.getElementById('lista-logins');
         
         let perguntasTemporarias = [];
+
+        // Atualiza a lista visual dos alunos online/offline no canto direito
+        socket.on('atualizar_lista_logins', (alunos) => {
+            if (alunos.length === 0) {
+                listaLogins.innerHTML = '<p style="font-size: 12px; color: #777;">Nenhum aluno conectado.</p>';
+                return;
+            }
+
+            listaLogins.innerHTML = '';
+            alunos.forEach(aluno => {
+                const item = document.createElement('div');
+                item.className = 'item-aluno';
+                
+                const statusClass = aluno.online ? 'online' : 'offline';
+                const statusTexto = aluno.online ? 'Online' : 'Offline (<10min)';
+
+                item.innerHTML = `
+                    <span class="status-dot ${statusClass}" title="${statusTexto}"></span>
+                    <span><strong>${aluno.nome}</strong></span>
+                `;
+                listaLogins.appendChild(item);
+            });
+        });
 
         function adicionarNaLista() {
             const input = document.getElementById('campo-pergunta');
             const text = input.value.trim();
-            if (!text) return alert("Digite a pergunta antes de adicionar!");
+            if (!text) return alert("Digite a pergunta!");
 
             perguntasTemporarias.push(text);
-            
             const li = document.createElement('li');
             li.style.marginBottom = "5px";
             li.innerText = text;
@@ -57,27 +86,20 @@
         }
 
         function dispararRodada() {
-            if (perguntasTemporarias.length === 0) {
-                return alert("Adicione pelo menos uma pergunta na lista antes de começar!");
-            }
-
-            if (confirm("Deseja iniciar o jogo agora? Isso enviará a primeira pergunta para os alunos e resetará o progresso de todos.")) {
+            if (perguntasTemporarias.length === 0) return alert("Adicione pelo menos uma pergunta!");
+            if (confirm("Deseja iniciar o jogo agora?")) {
                 socket.emit('iniciar_rodada_perguntas', { perguntas: perguntasTemporarias });
-                alert("Jogo iniciado com sucesso! Os alunos receberam a primeira pergunta.");
+                alert("Jogo iniciado com sucesso!");
             }
         }
 
-        // Fila que vai empilhando as respostas que chegam em ordem cronológica
         socket.on('nova_resposta_professor', (dados) => {
             const avisoVazio = document.getElementById('sem-respostas');
-            if (avisoVazio) {
-                avisoVazio.remove();
-            }
+            if (avisoVazio) avisoVazio.remove();
 
-            // Cria um card único para cada resposta enviada
             const card = document.createElement('div');
             card.className = 'card-resposta';
-            card.id = dados.id_resposta; // Vinculado ao ID exclusivo daquela resposta específica
+            card.id = dados.id_resposta;
             card.innerHTML = `
                 <h3>Aluno: ${dados.nome}</h3>
                 <p><strong>Pergunta ${dados.indice_pergunta + 1}:</strong> ${dados.pergunta}</p>
@@ -87,21 +109,14 @@
                     <button class="btn-rejeitar" onclick="decidir('${dados.id_resposta}', '${dados.id_aluno}', false)">Rejeitar ✖</button>
                 </div>
             `;
-            // appendChild adiciona no fim da lista, garantindo a ordem cronológica de quem enviou primeiro no topo!
             listaRespostas.appendChild(card);
         });
 
         function decidir(idResposta, idAluno, aprovado) {
-            socket.emit('decisao_professor', {
-                id_aluno: idAluno,
-                aprovado: aprovado
-            });
-
-            // Remove especificamente o card correspondente à resposta avaliada
+            socket.emit('decisao_professor', { id_aluno: idAluno, aprovado: aprovado });
             const card = document.getElementById(idResposta);
             if (card) card.remove();
 
-            // Se não houver mais respostas na tela, exibe o aviso padrão de lista vazia
             if (listaRespostas.children.length === 0) {
                 listaRespostas.innerHTML = '<p id="sem-respostas">Nenhuma resposta pendente no momento.</p>';
             }
