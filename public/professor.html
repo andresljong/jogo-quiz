@@ -47,12 +47,12 @@
         
         let perguntasTemporarias = [];
 
-        // Assim que o professor conecta, solicita a lista atual
+        // Solicita a lista de alunos assim que o professor conecta
         socket.on('connect', () => {
             socket.emit('professor_solicita_logins');
         });
 
-        // Atualiza a lista visual dos alunos online/offline
+        // Atualiza a lista visual dos alunos no painel lateral
         socket.on('atualizar_lista_logins', (alunos) => {
             if (!alunos || alunos.length === 0) {
                 listaLogins.innerHTML = '<p style="font-size: 12px; color: #777;">Nenhum aluno conectado.</p>';
@@ -75,24 +75,48 @@
             });
         });
 
+        // Adiciona uma nova pergunta no array e re-renderiza a lista
         function adicionarNaLista() {
             const input = document.getElementById('campo-pergunta');
             const text = input.value.trim();
             if (!text) return alert("Digite a pergunta!");
 
             perguntasTemporarias.push(text);
-            const li = document.createElement('li');
-            li.style.marginBottom = "5px";
-            li.innerText = text;
-            listaPreparacao.appendChild(li);
+            atualizarListaVisual();
 
             input.value = "";
             input.focus();
         }
 
+        // Remove a pergunta pelo índice do array
+        function removerPergunta(indice) {
+            perguntasTemporarias.splice(indice, 1);
+            atualizarListaVisual();
+        }
+
+        // Atualiza a exibição visual da lista numerada no HTML
+        function atualizarListaVisual() {
+            listaPreparacao.innerHTML = '';
+            
+            if (perguntasTemporarias.length === 0) {
+                return;
+            }
+
+            perguntasTemporarias.forEach((pergunta, index) => {
+                const li = document.createElement('li');
+                li.style.cssText = "margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;";
+                
+                li.innerHTML = `
+                    <span style="word-break: break-word; margin-right: 10px;">${pergunta}</span>
+                    <button onclick="removerPergunta(${index})" style="background-color: #dc3545; color: white; border: none; border-radius: 4px; padding: 4px 8px; cursor: pointer; font-size: 12px; flex-shrink: 0;">Remover 🗑️</button>
+                `;
+                listaPreparacao.appendChild(li);
+            });
+        }
+
         function dispararRodada() {
             if (perguntasTemporarias.length === 0) return alert("Adicione pelo menos uma pergunta!");
-            if (confirm("Deseja iniciar o jogo agora?")) {
+            if (confirm("Deseja iniciar o jogo agora com as " + perguntasTemporarias.length + " perguntas da lista?")) {
                 socket.emit('iniciar_rodada_perguntas', { perguntas: perguntasTemporarias });
                 alert("Jogo iniciado com sucesso!");
             }
