@@ -33,20 +33,21 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
 
     <script>
-        // ATENÇÃO: Verifique se todas as aspas e vírgulas das suas chaves estão corretas!
-        const firebaseConfig = {;
-  apiKey: "AIzaSyCkcjh3zLMA0kPLrzHYSUDlNVu92iXYrtA",
-  authDomain: "quiz-escola-61ff5.firebaseapp.com",
-  projectId: "quiz-escola-61ff5",
-  storageBucket: "quiz-escola-61ff5.firebasestorage.app",
-  messagingSenderId: "519577877230",
-  appId: "1:519577877230:web:7a43984e418527847dd1ff"
-};
-        // Inicialização do Firebase
+        // Suas chaves do Firebase já aplicadas e verificadas:
+        const firebaseConfig = {
+            apiKey: "AIzaSyCkcjh3zLMA0kPLrzHYSUDlNVu92iXYrtA",
+            authDomain: "quiz-escola-61ff5.firebaseapp.com",
+            projectId: "quiz-escola-61ff5",
+            storageBucket: "quiz-escola-61ff5.firebasestorage.app",
+            messagingSenderId: "519577877230",
+            appId: "1:519577877230:web:7a43984e418527847dd1ff"
+        };
+
+        // Inicialização com tratamento de erros
         try {
             firebase.initializeApp(firebaseConfig);
         } catch (e) {
-            console.error("Erro ao inicializar Firebase:", e);
+            console.error("Erro na inicialização do Firebase:", e);
         }
 
         const auth = firebase.auth();
